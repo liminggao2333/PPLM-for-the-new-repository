@@ -3,3 +3,4 @@ nltk
 colorama
 transformers
 torchtext
+cached_path
