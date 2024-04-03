@@ -119,16 +119,19 @@ def perturb_past(
 ):
     # Generate initial perturbed past
     grad_accumulator = [
-        (torch.zeros_like(p[0]), torch.zeros_like(p[1]))
+        (np.zeros(p[0].shape).astype("float32"), np.zeros(p[1].shape).astype("float32"))
         for p in past
     ]
+
+    if accumulated_hidden is None:
+        accumulated_hidden = torch.zeros_like(past[0][0][:, 0, :], device=device)
 
     if decay:
         decay_mask = torch.arange(
             0.,
             1.0 + SMALL_CONST,
             1.0 / (window_length)
-        )[1:]
+        )[1:].to(device)
     else:
         decay_mask = 1.0
 
@@ -147,21 +150,15 @@ def perturb_past(
                 + past[0][0].shape[-1:]
         )
 
-        ones_mask = torch.ones(ones_key_val_shape)
-        # print("Shape of ones_mask before permute:", ones_mask.shape)
-        ones_mask = decay_mask * ones_mask.permute(0, 1, 2, 3)
-        # ones_mask = ones_mask.permute(0, 1, 2, 4, 3)
+        ones_mask = torch.ones(ones_key_val_shape).to(device)
+        ones_mask = decay_mask * ones_mask
 
         window_mask = torch.cat(
-            (ones_mask, torch.zeros(zeros_key_val_shape)),
+            (ones_mask, torch.zeros(zeros_key_val_shape).to(device)),
             dim=-2
-        ).to(device)
+        )
     else:
         window_mask = torch.ones_like(past[0][0]).to(device)
-
-    # Initialize accumulated_hidden before the loop
-    if accumulated_hidden is None:
-        accumulated_hidden = torch.tensor(0, device=device)
 
     # accumulate perturbations for num_iterations
     loss_per_iter = []
@@ -170,8 +167,8 @@ def perturb_past(
         if verbosity_level >= VERBOSE:
             print("Iteration ", i + 1)
         curr_perturbation = [
-            (to_var(p_[0], requires_grad=True, device=device),
-             to_var(p_[1], requires_grad=True, device=device))
+            (torch.tensor(p_[0], requires_grad=True, device=device),
+             torch.tensor(p_[1], requires_grad=True, device=device))
             for p_ in grad_accumulator
         ]
 
@@ -184,9 +181,6 @@ def perturb_past(
         hidden = all_hidden[-1]
 
         # Update accumulated_hidden with the correct shape
-        if accumulated_hidden.dim() == 0:  # Check if it's still a placeholder tensor
-            accumulated_hidden = torch.zeros_like(hidden[:, 0, :], device=device)
-
         new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
         accumulated_hidden = new_accumulated_hidden
 
@@ -249,7 +243,10 @@ def perturb_past(
                 for index, p_ in enumerate(curr_perturbation)]
 
         # accumulate gradient
-        grad_accumulator = list(map(add, grad, grad_accumulator))
+        grad_accumulator = [
+            (acc[0] + grad[index][0], acc[1] + grad[index][1])
+            for index, acc in enumerate(grad_accumulator)
+        ]
 
         # reset gradients, just to make sure
         for p_ in curr_perturbation:
@@ -261,10 +258,13 @@ def perturb_past(
         past = new_past
 
     # apply the accumulated perturbations to the past
-    pert_past = [(g[0] + acc[0], g[1] + acc[1]) for g, acc in zip(past, grad_accumulator)]
-
+    pert_past = [
+        (p[0] + torch.from_numpy(acc[0]).to(device), p[1] + torch.from_numpy(acc[1]).to(device))
+        for p, acc in zip(past, grad_accumulator)
+    ]
 
     return pert_past, new_accumulated_hidden, grad_norms, loss_per_iter
+
 
 
 
