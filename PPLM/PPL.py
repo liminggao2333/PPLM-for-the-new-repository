@@ -59,3 +59,34 @@ for i, text in enumerate(generated_texts):
 
 
 # Compute perplexity
+from collections import Counter
+from nltk.util import ngrams
+
+def calculate_distinct_ngrams(samples, n):
+    all_ngrams = [ngram for sample in samples for ngram in ngrams(sample.split(), n)]
+    unique_ngrams = set(all_ngrams)
+    return len(unique_ngrams) / len(all_ngrams)
+
+# 假设 generated_texts 是一个包含生成文本样本的列表
+dist_1 = calculate_distinct_ngrams(generated_texts, 1)
+dist_2 = calculate_distinct_ngrams(generated_texts, 2)
+dist_3 = calculate_distinct_ngrams(generated_texts, 3)
+
+print(f"Dist-1: {dist_1}")
+print(f"Dist-2: {dist_2}")
+print(f"Dist-3: {dist_3}")
+
+from transformers import pipeline
+
+# 加载预训练的情感分类器
+classifier = pipeline("sentiment-analysis")
+
+# 对生成的文本进行情感分类
+sentiment_results = classifier(generated_texts)
+
+# 分析情感结果
+positive_samples = [text for text, result in zip(generated_texts, sentiment_results) if result['label'] == 'POSITIVE']
+negative_samples = [text for text, result in zip(generated_texts, sentiment_results) if result['label'] == 'NEGATIVE']
+
+print(f"Number of positive samples: {len(positive_samples)}")
+print(f"Number of negative samples: {len(negative_samples)}")
