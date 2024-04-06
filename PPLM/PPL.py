@@ -79,7 +79,7 @@ print(f"Dist-3: {dist_3}")
 from transformers import pipeline
 
 # 加载预训练的情感分类器
-classifier = pipeline("sentiment-analysis")
+classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 # 对生成的文本进行情感分类
 sentiment_results = classifier(generated_texts)
