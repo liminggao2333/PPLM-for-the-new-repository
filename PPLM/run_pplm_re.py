@@ -747,7 +747,7 @@ def run_pplm_example(
             print("= Perturbed generated text {} =".format(i + 1))
             print(pert_gen_text)
             print()
-            gen_texts.append(pert_gen_text[16:])
+            gen_texts.append(pert_gen_text[13:])
         except:
             pass
     return gen_texts
