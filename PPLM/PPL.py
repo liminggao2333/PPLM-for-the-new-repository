@@ -25,19 +25,6 @@ def compute_ppl(model, tokenizer, text, stride=512):
     ppl = torch.exp(torch.stack(nlls).sum() / end_loc)
     return ppl.item()
 
-classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
-
-# 对生成的文本进行情感分类
-
-
-# 分析情感结果
-
-# Load pre-trained model and tokenizer
-model_name = 'gpt2'
-model = GPT2LMHeadModel.from_pretrained(model_name)
-tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-model.eval()
-model.to('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Example text
 
@@ -59,8 +46,13 @@ generated_texts = run_pplm_example(
     colorama=True,
     verbosity='quiet'
 )
-
-
+# Load pre-trained model and tokenizer
+model_name = 'gpt2'
+model = GPT2LMHeadModel.from_pretrained(model_name)
+tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+model.eval()
+model.to('cuda' if torch.cuda.is_available() else 'cpu')
+classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 # Assuming the function returns a list of generated texts
 for i, text in enumerate(generated_texts):
     ppl = compute_ppl(model, tokenizer, text)
