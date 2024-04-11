@@ -31,18 +31,18 @@ def compute_ppl(model, tokenizer, text, stride=512):
 # Generate text using your PPLM model
 generated_texts = run_pplm_example(
     cond_text="The potato",
-    num_samples=50,
+    num_samples=20,
     bag_of_words='science',
     discrim="sentiment",
-    class_label="very_negative",
+    class_label="very_positive",
     length=50,
-    stepsize=0.03,
+    stepsize=0.05,
     sample=True,
-    num_iterations=3,
-    window_length=5,
-    gamma=1.5,
-    gm_scale=0.95,
-    kl_scale=0.01,
+    num_iterations=10,
+    # window_length=0,
+    gamma=1.0,
+    gm_scale=0.9,
+    kl_scale=0.02,
     colorama=True,
     verbosity='quiet'
 )
